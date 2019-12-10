@@ -7,6 +7,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class DAOUsersImpl implements DAOUsers {
 
@@ -81,20 +84,21 @@ public class DAOUsersImpl implements DAOUsers {
 		if (user != null) {
 			conn = ConnessioneDB.openConnect(driver, url, userdb, pwd);
 			if(conn != null) {
-				sql= "Insert into users(id, nome, address, email, phone) values(?,?,?,?,?)";
-				pstmt = conn.prepareStatement(sql);
-				pstmt.setInt(1, user.getId());
-				pstmt.setString(2, user.getNome());
-				pstmt.setString(3, user.getAddress());
-				pstmt.setString(4, user.getEmail());
-				pstmt.setString(5, user.getPhone());
-				pstmt.executeUpdate();
-				System.out.println("*** inserimento avvenuto correttamente ***");
-			}
-		}else {
-			System.out.println("nessun riferimento è stato passato per elaborare dati");
-		}
-	}
+				if (StringUtils.isNumeric(user.getPhone())) {
+					sql= "Insert into users(id, nome, address, email, phone) values(?,?,?,?,?)";
+					pstmt = conn.prepareStatement(sql);
+					pstmt.setInt(1, user.getId());
+					pstmt.setString(2, user.getNome());
+					pstmt.setString(3, user.getAddress());
+					pstmt.setString(4, user.getEmail());
+					pstmt.setString(5, user.getPhone());
+					pstmt.executeUpdate();
+					System.out.println("*** inserimento avvenuto correttamente ***");
+				} else System.out.println("inserire solo cifre!!!");
+				}
+			}else {
+				System.out.println("nessun riferimento è stato passato per elaborare dati");
+		}}
 	@Override
 	public void updateUser(Users user) throws SQLException {
 
@@ -121,29 +125,38 @@ public class DAOUsersImpl implements DAOUsers {
 	public void deleteUser(int id) throws SQLException {
 
 		user = null;
+		Scanner sc = new Scanner(System.in);
 		conn = ConnessioneDB.openConnect(driver, url, userdb, pwd);
-		
+		conn.setAutoCommit(false);
 		if (conn != null) {
 			sql= "Delete from users Where id = ?";
 			pstmt = conn.prepareStatement(sql);
 			pstmt.setInt(1, id);
 			pstmt.executeUpdate();
-			
-			System.out.println("*** cancellazione avvenuto correttamente ***");
-		} else {
-			System.out.println("nessun riferimento è stato passato per la cancellazione dei dati");
-		}
+			System.out.println("Vuoi davvero cancellare l'user selezionato? (si/no)");
+			if(sc.nextLine().equalsIgnoreCase("si")) {
+				conn.commit();
+				System.out.println("*** Cancellazione avvenuta correttamente ***");
+			}
+			else if((sc.nextLine().equalsIgnoreCase("no"))) {
+				conn.rollback();
+				System.out.println("*** Cancellazione non avvenuta ***");
+
+			} else {
+				System.out.println("nessun riferimento è stato passato per la cancellazione dei dati");
+			}
+		}		
 	}
 
 	public boolean checkUserId (int id) throws SQLException {
 
 		conn = ConnessioneDB.openConnect(driver, url, userdb, pwd);
 
-			sql= "Select id From users where id = ?";
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setInt(1, id);
-			pstmt.executeQuery();
-			rs=pstmt.executeQuery();
+		sql= "Select id From users where id = ?";
+		pstmt = conn.prepareStatement(sql);
+		pstmt.setInt(1, id);
+		pstmt.executeQuery();
+		rs=pstmt.executeQuery();
 		return rs.isBeforeFirst();
-}
+	}
 }
